@@ -12,8 +12,8 @@ export interface OsmosisConfig {
   captureToolCalls: boolean;
   /** Inject knowledge context at task start (default: true when enabled) */
   injectContext: boolean;
-  /** Peer Osmosis instance URLs for sync */
-  peers: string[];
+  /** Mesh server URL for sync */
+  meshUrl: string;
   /** Sync interval in ms (default: 5 min) */
   syncInterval: number;
 }
@@ -24,7 +24,7 @@ export const DEFAULT_CONFIG: OsmosisConfig = {
   apiPort: 7432,
   captureToolCalls: true,
   injectContext: true,
-  peers: [],
+  meshUrl: 'https://mesh.osmosis.dev',
   syncInterval: 5 * 60 * 1000,
 };
 

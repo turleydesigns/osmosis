@@ -20,8 +20,8 @@ export function initOsmosis(config: OsmosisConfig): OsmosisHandle {
   const store = new AtomStore(config.dbPath);
 
   const syncConfig = resolveSyncConfig({
-    peers: config.peers,
-    autoSync: config.peers.length > 0,
+    meshUrl: config.meshUrl,
+    autoSync: !!config.meshUrl,
     syncIntervalMs: config.syncInterval,
   });
 

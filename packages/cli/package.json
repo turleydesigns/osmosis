@@ -15,7 +15,8 @@
   },
   "dependencies": {
     "@osmosis/core": "*",
-    "@osmosis/sync": "*"
+    "@osmosis/sync": "*",
+    "@osmosis/mesh-server": "*"
   },
   "devDependencies": {
     "better-sqlite3": "^11.7.0",

@@ -1,6 +1,6 @@
-export { pushAtoms } from './push.js';
-export { pullAtoms } from './pull.js';
-export { syncWithPeer } from './sync.js';
+export { contributeTo, pushAtoms } from './push.js';
+export { learnFrom, pullAtoms } from './pull.js';
+export { syncWithMesh, syncWithPeer } from './sync.js';
 export { createSyncServer } from './server.js';
 export { startAutoSync } from './scheduler.js';
 export type { AutoSyncHandle } from './scheduler.js';

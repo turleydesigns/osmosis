@@ -2,24 +2,27 @@ import type { AtomStore, KnowledgeAtom } from '@osmosis/core';
 import type { SyncResult } from './types.js';
 import { getLastPullAt, setLastPullAt } from './meta.js';
 
-export async function pullAtoms(localStore: AtomStore, remoteUrl: string): Promise<SyncResult> {
+/**
+ * Learn from the mesh server — pull new/updated atoms.
+ */
+export async function learnFrom(localStore: AtomStore, meshUrl: string): Promise<SyncResult> {
   const errors: string[] = [];
-  const since = getLastPullAt(localStore, remoteUrl);
+  const since = getLastPullAt(localStore, meshUrl);
   const now = new Date().toISOString();
 
   let remoteAtoms: KnowledgeAtom[] = [];
   try {
     const url = since
-      ? `${remoteUrl}/atoms?since=${encodeURIComponent(since)}`
-      : `${remoteUrl}/atoms`;
+      ? `${meshUrl}/mesh/atoms?since=${encodeURIComponent(since)}`
+      : `${meshUrl}/mesh/atoms`;
     const res = await fetch(url);
     if (!res.ok) {
       const errBody = await res.text();
-      return { pushed: 0, pulled: 0, deduped: 0, errors: [`Pull failed: ${res.status} ${errBody}`], timestamp: now };
+      return { pushed: 0, pulled: 0, deduped: 0, errors: [`Learn failed: ${res.status} ${errBody}`], timestamp: now };
     }
     remoteAtoms = await res.json() as KnowledgeAtom[];
   } catch (err: any) {
-    return { pushed: 0, pulled: 0, deduped: 0, errors: [`Pull error: ${err.message}`], timestamp: now };
+    return { pushed: 0, pulled: 0, deduped: 0, errors: [`Learn error: ${err.message}`], timestamp: now };
   }
 
   let pulled = 0;
@@ -36,28 +39,21 @@ export async function pullAtoms(localStore: AtomStore, remoteUrl: string): Promi
       } else {
         result = localStore.createAtom(data);
       }
-      // If the local store returned an existing atom (dedup), count it
-      // We can detect dedup by checking if the atom already existed
-      // Since createXAtom does dedup internally and returns the merged atom,
-      // we check if the result's created_at is before our sync window
-      if (result.created_at < now && result.updated_at <= now) {
-        // Could be new or deduped — check if observation matches an existing
-        // Simple heuristic: if evidence_count > 1 on result, it was merged
-        const ec = (result as any).evidence_count;
-        if (ec && ec > 1) {
-          deduped++;
-        } else {
-          pulled++;
-        }
+
+      const ec = (result as any).evidence_count;
+      if (ec && ec > 1) {
+        deduped++;
       } else {
         pulled++;
       }
     } catch (err: any) {
-      errors.push(`Pull insert error: ${err.message}`);
+      errors.push(`Learn insert error: ${err.message}`);
     }
   }
 
-  setLastPullAt(localStore, remoteUrl, now);
-
+  setLastPullAt(localStore, meshUrl, now);
   return { pushed: 0, pulled, deduped, errors, timestamp: now };
 }
+
+// Keep backward compat alias
+export const pullAtoms = learnFrom;

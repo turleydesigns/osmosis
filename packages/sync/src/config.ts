@@ -1,6 +1,6 @@
 export interface SyncConfig {
-  /** URLs of peer Osmosis instances */
-  peers: string[];
+  /** URL of the Osmosis mesh server */
+  meshUrl: string;
   /** Auto-sync interval in ms (default: 5 min) */
   syncIntervalMs: number;
   /** Enable periodic sync */
@@ -8,7 +8,7 @@ export interface SyncConfig {
 }
 
 export const DEFAULT_SYNC_CONFIG: SyncConfig = {
-  peers: [],
+  meshUrl: 'https://mesh.osmosis.dev',
   syncIntervalMs: 5 * 60 * 1000,
   autoSync: false,
 };

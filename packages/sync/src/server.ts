@@ -1,31 +1,16 @@
 import { createServer as createHttpServer, type Server } from 'node:http';
-import { AtomStore, createServer as createCoreServer } from '@osmosis/core';
+import { AtomStore } from '@osmosis/core';
 import type { SyncConfig } from './config.js';
-import { syncWithPeer } from './sync.js';
-import { getAllPeers } from './meta.js';
 
 /**
- * Create an extended API server that includes core endpoints + sync endpoints.
- * Wraps the core server and adds:
- *   GET  /sync/status  — sync status info
- *   POST /sync/trigger — manually trigger sync with all configured peers
- *
- * The core server's GET /atoms is enhanced with ?since= support via the
- * updated core API (see core/api changes).
+ * Create a local API server for querying the local atom store.
+ * This is the "osmosis serve" server — local queries only, no peer sync routes.
  */
 export function createSyncServer(
   store: AtomStore,
   port: number,
-  config: SyncConfig,
+  _config: SyncConfig,
 ): Server {
-  // Start the core server on port — we'll just use it directly
-  // But we need to add routes. Since core server is a plain http server,
-  // we'll create our own that delegates to core for non-sync routes.
-
-  const coreServer = createCoreServer(store, 0); // don't listen on real port
-  // Actually, core createServer already listens. Let's close it and build our own.
-  coreServer.close();
-
   const server = createHttpServer(async (req, res) => {
     const url = new URL(req.url ?? '/', `http://localhost:${port}`);
     const path = url.pathname;
@@ -37,32 +22,6 @@ export function createSyncServer(
     };
 
     try {
-      // Sync-specific routes
-      if (method === 'GET' && path === '/sync/status') {
-        const peers = getAllPeers(store);
-        const allAtoms = store.getAll();
-        return json(200, {
-          atomCount: allAtoms.length,
-          peerCount: config.peers.length,
-          peers,
-          configuredPeers: config.peers,
-        });
-      }
-
-      if (method === 'POST' && path === '/sync/trigger') {
-        const results = [];
-        for (const peer of config.peers) {
-          try {
-            const r = await syncWithPeer(store, peer);
-            results.push({ peer, ...r });
-          } catch (err: any) {
-            results.push({ peer, error: err.message });
-          }
-        }
-        return json(200, { results });
-      }
-
-      // Core routes — re-implement inline to avoid double-server overhead
       const readBody = (): Promise<string> => new Promise((resolve, reject) => {
         const chunks: Buffer[] = [];
         req.on('data', (c: Buffer) => chunks.push(c));
@@ -113,12 +72,20 @@ export function createSyncServer(
           atoms = store.getAll();
         }
 
-        // Apply since filter
         if (since) {
           atoms = atoms.filter(a => a.updated_at > since);
         }
 
         return json(200, atoms);
+      }
+
+      // GET /sync/status — kept for backward compat
+      if (method === 'GET' && path === '/sync/status') {
+        const allAtoms = store.getAll();
+        return json(200, {
+          atomCount: allAtoms.length,
+          meshUrl: _config.meshUrl,
+        });
       }
 
       json(404, { error: 'Not found' });

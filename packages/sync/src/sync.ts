@@ -1,11 +1,14 @@
 import type { AtomStore } from '@osmosis/core';
 import type { SyncResult } from './types.js';
-import { pushAtoms } from './push.js';
-import { pullAtoms } from './pull.js';
+import { contributeTo } from './push.js';
+import { learnFrom } from './pull.js';
 
-export async function syncWithPeer(localStore: AtomStore, peerUrl: string): Promise<SyncResult> {
-  const pushResult = await pushAtoms(localStore, peerUrl);
-  const pullResult = await pullAtoms(localStore, peerUrl);
+/**
+ * Full sync with mesh: contribute local atoms, then learn from mesh.
+ */
+export async function syncWithMesh(localStore: AtomStore, meshUrl: string): Promise<SyncResult> {
+  const pushResult = await contributeTo(localStore, meshUrl);
+  const pullResult = await learnFrom(localStore, meshUrl);
 
   return {
     pushed: pushResult.pushed + pushResult.deduped,
@@ -15,3 +18,6 @@ export async function syncWithPeer(localStore: AtomStore, peerUrl: string): Prom
     timestamp: pullResult.timestamp,
   };
 }
+
+// Keep backward compat alias
+export const syncWithPeer = syncWithMesh;
