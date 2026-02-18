@@ -14,7 +14,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@osmosis/core": "*"
+    "@osmosis/core": "*",
+    "@osmosis/sync": "*"
   },
   "devDependencies": {
     "better-sqlite3": "^11.7.0",

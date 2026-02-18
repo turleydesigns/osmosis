@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { AtomStore, createServer, searchAtoms, getTopAtoms, seedAtoms } from '@osmosis/core';
+import { createSyncServer, syncWithPeer, getAllPeers, startAutoSync, resolveSyncConfig } from '@osmosis/sync';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { mkdirSync } from 'node:fs';
@@ -23,6 +24,17 @@ function getPort(): number {
   return parseInt(process.env.OSMOSIS_PORT ?? String(DEFAULT_PORT), 10);
 }
 
+function getPeers(): string[] {
+  const peers: string[] = [];
+  let idx = args.indexOf('--peers');
+  while (idx !== -1 && args[idx + 1]) {
+    peers.push(...args[idx + 1]!.split(',').filter(Boolean));
+    const next = args.indexOf('--peers', idx + 1);
+    idx = next;
+  }
+  return peers;
+}
+
 function ensureDir(dbPath: string): void {
   const dir = dbPath.substring(0, dbPath.lastIndexOf('/'));
   if (dir) mkdirSync(dir, { recursive: true });
@@ -39,13 +51,25 @@ async function main(): Promise<void> {
     case 'serve': {
       const store = openStore();
       const port = getPort();
-      const server = createServer(store, port);
+      const peers = getPeers();
+      const syncConfig = resolveSyncConfig({
+        peers,
+        autoSync: peers.length > 0,
+      });
+      const server = createSyncServer(store, port, syncConfig);
       console.log(`🧠 Osmosis API server listening on http://localhost:${port}`);
       console.log(`   Database: ${getDbPath()}`);
+      if (peers.length > 0) {
+        console.log(`   Peers: ${peers.join(', ')}`);
+        console.log(`   Auto-sync: every ${syncConfig.syncIntervalMs / 1000}s`);
+      }
       console.log(`   Press Ctrl+C to stop`);
+
+      const autoSync = startAutoSync(store, syncConfig);
 
       process.on('SIGINT', () => {
         console.log('\nShutting down...');
+        autoSync.stop();
         server.close();
         store.close();
         process.exit(0);
@@ -108,6 +132,43 @@ async function main(): Promise<void> {
       break;
     }
 
+    case 'sync': {
+      const peerUrl = args[1];
+      if (!peerUrl) {
+        console.error('Usage: osmosis sync <peer-url>');
+        process.exit(1);
+      }
+      const store = openStore();
+      console.log(`🔄 Syncing with ${peerUrl}...`);
+      const result = await syncWithPeer(store, peerUrl);
+      console.log(`   Pushed: ${result.pushed}`);
+      console.log(`   Pulled: ${result.pulled}`);
+      console.log(`   Deduped: ${result.deduped}`);
+      if (result.errors.length > 0) {
+        console.log(`   Errors: ${result.errors.length}`);
+        for (const e of result.errors) console.log(`     - ${e}`);
+      }
+      store.close();
+      break;
+    }
+
+    case 'peers': {
+      const store = openStore();
+      const peers = getAllPeers(store);
+      if (peers.length === 0) {
+        console.log('No sync peers configured. Use --peers when running serve, or sync manually.');
+      } else {
+        console.log('🔗 Sync Peers:');
+        for (const p of peers) {
+          console.log(`   ${p.peer_url}`);
+          console.log(`     Last push: ${p.last_push_at ?? 'never'}`);
+          console.log(`     Last pull: ${p.last_pull_at ?? 'never'}`);
+        }
+      }
+      store.close();
+      break;
+    }
+
     case 'reset': {
       const store = openStore();
       const all = store.getAll();
@@ -124,15 +185,18 @@ async function main(): Promise<void> {
       console.log(`🧠 Osmosis CLI v0.1.0
 
 Usage:
-  osmosis serve   [--port N] [--db PATH]  Start the REST API server
+  osmosis serve   [--port N] [--db PATH] [--peers URL,URL]  Start the API server
   osmosis status  [--db PATH]             Show atom count and top atoms
   osmosis search  <query> [--db PATH]     Search atoms
+  osmosis sync    <peer-url> [--db PATH]  One-shot sync with a peer
+  osmosis peers   [--db PATH]             List configured peers + last sync time
   osmosis seed    [--db PATH]             Seed with example atoms
   osmosis reset   [--db PATH]             Wipe all atoms
 
 Options:
-  --db PATH    Database path (default: ~/.osmosis/atoms.db)
-  --port N     API port (default: 7432)
+  --db PATH       Database path (default: ~/.osmosis/atoms.db)
+  --port N        API port (default: 7432)
+  --peers URLs    Comma-separated peer URLs for auto-sync
 
 Environment:
   OSMOSIS_DB_PATH   Database path override

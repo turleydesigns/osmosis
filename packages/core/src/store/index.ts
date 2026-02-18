@@ -43,6 +43,7 @@ CREATE INDEX IF NOT EXISTS idx_atoms_type ON atoms(type);
 CREATE INDEX IF NOT EXISTS idx_atoms_tool_name ON atoms(tool_name);
 CREATE INDEX IF NOT EXISTS idx_atoms_confidence ON atoms(confidence);
 CREATE INDEX IF NOT EXISTS idx_atoms_fitness ON atoms(fitness_score);
+CREATE INDEX IF NOT EXISTS idx_atoms_updated_at ON atoms(updated_at);
 `;
 
 // Migration: add columns if they don't exist (for existing DBs)

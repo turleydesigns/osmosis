@@ -1,7 +1,7 @@
 {
-  "name": "@osmosis/openclaw",
+  "name": "@osmosis/sync",
   "version": "0.1.0",
-  "description": "OpenClaw integration hook for Osmosis — instrument tool calls and inject knowledge context",
+  "description": "Sync engine for Osmosis — HTTP-based instance-to-instance sync",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -11,8 +11,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@osmosis/core": "*",
-    "@osmosis/sync": "*"
+    "@osmosis/core": "*"
   },
   "devDependencies": {
     "better-sqlite3": "^11.7.0",

@@ -12,6 +12,10 @@ export interface OsmosisConfig {
   captureToolCalls: boolean;
   /** Inject knowledge context at task start (default: true when enabled) */
   injectContext: boolean;
+  /** Peer Osmosis instance URLs for sync */
+  peers: string[];
+  /** Sync interval in ms (default: 5 min) */
+  syncInterval: number;
 }
 
 export const DEFAULT_CONFIG: OsmosisConfig = {
@@ -20,6 +24,8 @@ export const DEFAULT_CONFIG: OsmosisConfig = {
   apiPort: 7432,
   captureToolCalls: true,
   injectContext: true,
+  peers: [],
+  syncInterval: 5 * 60 * 1000,
 };
 
 export function resolveConfig(partial?: Partial<OsmosisConfig>): OsmosisConfig {

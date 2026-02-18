@@ -60,18 +60,26 @@ export function createServer(store: AtomStore, port: number = 3917): Server {
         return json(res, 200, atom);
       }
 
-      // GET /atoms?type=&tool_name=
+      // GET /atoms?type=&tool_name=&since=
       if (method === 'GET' && path === '/atoms') {
         const type = url.searchParams.get('type');
         const toolName = url.searchParams.get('tool_name');
+        const since = url.searchParams.get('since');
 
+        let atoms;
         if (toolName) {
-          return json(res, 200, store.queryByToolName(toolName));
+          atoms = store.queryByToolName(toolName);
+        } else if (type) {
+          atoms = store.queryByType(type as any);
+        } else {
+          atoms = store.getAll();
         }
-        if (type) {
-          return json(res, 200, store.queryByType(type as any));
+
+        if (since) {
+          atoms = atoms.filter(a => a.updated_at > since);
         }
-        return json(res, 200, store.getAll());
+
+        return json(res, 200, atoms);
       }
 
       json(res, 404, { error: 'Not found' });
