@@ -1,0 +1,23 @@
+app = "osmosis-mesh"
+primary_region = "sjc"
+
+[build]
+
+[env]
+  MESH_PORT = "7433"
+  MESH_DB_PATH = "/data/mesh.db"
+
+[http_service]
+  internal_port = 7433
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[mounts]
+  source = "osmosis_data"
+  destination = "/data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
