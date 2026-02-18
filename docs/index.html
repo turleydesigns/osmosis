@@ -1074,29 +1074,41 @@
   <div class="container">
     <div class="section-header reveal">
       <div class="eyebrow">Built on Research</div>
-      <h2 class="section-title">Not theory. Proven techniques from 15+ papers.</h2>
+      <h2 class="section-title">Not theory. Grounded in research from Google DeepMind and 15+ papers.</h2>
       <p class="section-subtitle">Every component of Osmosis is grounded in peer-reviewed research. We're combining proven techniques in a novel architecture.</p>
     </div>
     <div class="research-grid">
       <div class="research-card reveal" style="transition-delay: 0.05s">
+        <div class="rc-tag" style="background: rgba(251, 191, 36, 0.1); color: var(--amber);">Patchwork AGI</div>
+        <h3>Distributional AGI Safety — Google DeepMind</h3>
+        <p>Argues AGI will emerge from networks of specialized agents coordinating as a collective, not a single monolithic model. Proposes reputation systems, agent economies, and market mechanisms for safe multi-agent coordination. Validates Osmosis's core thesis independently.</p>
+        <div class="rc-source">arXiv:2512.16856 · Dec 2025 · Google DeepMind</div>
+      </div>
+      <div class="research-card reveal" style="transition-delay: 0.1s">
+        <div class="rc-tag" style="background: rgba(248, 113, 113, 0.1); color: var(--red);">Unified Memory</div>
+        <h3>AgeMem — Agentic Memory</h3>
+        <p>Unifies long-term and short-term agent memory as tool-based actions (ADD, UPDATE, DELETE, RETRIEVE). Progressive RL training achieves 21.7% improvement over no-memory baselines. Informs how Osmosis structures knowledge atom operations.</p>
+        <div class="rc-source">arXiv:2601.01885 · Jan 2026</div>
+      </div>
+      <div class="research-card reveal" style="transition-delay: 0.15s">
         <div class="rc-tag">Skill Distillation</div>
         <h3>SkillRL — Recursive skill extraction</h3>
         <p>Automatically extracts reusable behavioral patterns from raw agent traces. Hierarchical — complex skills build on simpler ones. 15%+ improvement over baselines.</p>
         <div class="rc-source">arXiv:2602.08234 · Feb 2026</div>
       </div>
-      <div class="research-card reveal" style="transition-delay: 0.1s">
+      <div class="research-card reveal" style="transition-delay: 0.2s">
         <div class="rc-tag">Cross-Instance Transfer</div>
         <h3>Agent KB — It actually works</h3>
         <p>Proved that knowledge from one agent framework transfers to others without retraining. Universal memory infrastructure across architectures. Validates our core premise.</p>
         <div class="rc-source">arXiv:2507.06229 · Jul 2025</div>
       </div>
-      <div class="research-card reveal" style="transition-delay: 0.15s">
+      <div class="research-card reveal" style="transition-delay: 0.25s">
         <div class="rc-tag">Failure Learning</div>
         <h3>Mistake Notebook Learning</h3>
         <p>Batch-clusters agent failures into generalized anti-patterns. External memory updates only when quality improves — prevents noise. Our model for NegativeAtoms.</p>
         <div class="rc-source">arXiv:2512.11485 · Dec 2025</div>
       </div>
-      <div class="research-card reveal" style="transition-delay: 0.2s">
+      <div class="research-card reveal" style="transition-delay: 0.3s">
         <div class="rc-tag">Memory Architecture</div>
         <h3>MemEvolve — Meta-evolving memory</h3>
         <p>Not just evolving knowledge — evolving how agents store and retrieve it. 12 memory systems in modular form. 17% improvement by meta-evolving the architecture itself.</p>
@@ -1234,10 +1246,15 @@
 <section class="final-cta" id="cta">
   <div class="container">
     <h2 class="section-title reveal">Your agent shouldn't<br>learn alone.</h2>
-    <p class="section-subtitle reveal">Osmosis is in early development. Star the repo, watch for updates, or contribute to the design.</p>
+    <p class="section-subtitle reveal">Osmosis is in early development. Get notified when the first alpha drops.</p>
+    <form class="waitlist-form reveal" id="waitlistForm" style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; max-width: 500px; margin: 0 auto 1.5rem;">
+      <input type="email" id="waitlistEmail" placeholder="you@example.com" required style="flex: 1; min-width: 220px; padding: 0.85rem 1.2rem; border-radius: 8px; border: 1px solid var(--border-hover); background: var(--bg-card); color: var(--text); font-family: var(--font-body); font-size: 0.95rem; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(110,231,183,0.4)'" onblur="this.style.borderColor='var(--border-hover)'">
+      <button type="submit" class="btn-primary" style="font-size: 0.95rem; padding: 0.85rem 2rem; white-space: nowrap;">Join Waitlist</button>
+    </form>
+    <p id="waitlistMsg" style="display:none; color: var(--accent); font-size: 0.9rem; text-align: center; margin-bottom: 1.5rem;"></p>
     <div class="reveal" style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-      <a href="https://github.com/turleydesigns/osmosis" class="btn-primary" style="font-size: 1.05rem; padding: 1rem 2.5rem;">Star on GitHub</a>
-      <a href="https://github.com/turleydesigns/osmosis/issues" class="btn-ghost" style="font-size: 1.05rem; padding: 1rem 2.5rem;">Join the Discussion</a>
+      <a href="https://github.com/turleydesigns/osmosis" class="btn-ghost" style="font-size: 0.95rem; padding: 0.85rem 2rem;">Star on GitHub</a>
+      <a href="https://github.com/turleydesigns/osmosis/issues" class="btn-ghost" style="font-size: 0.95rem; padding: 0.85rem 2rem;">Join the Discussion</a>
     </div>
     <div class="final-links reveal">
       <a href="#">Documentation</a>
@@ -1297,6 +1314,33 @@
     requestAnimationFrame(draw);
   }
   draw();
+
+  // Waitlist form
+  document.getElementById('waitlistForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('waitlistEmail').value;
+    const msg = document.getElementById('waitlistMsg');
+    const btn = e.target.querySelector('button');
+    btn.textContent = 'Joining...';
+    btn.disabled = true;
+    try {
+      // Store locally — we'll hook up Resend later
+      const existing = JSON.parse(localStorage.getItem('osmosis_waitlist') || '[]');
+      if (!existing.includes(email)) {
+        existing.push(email);
+        localStorage.setItem('osmosis_waitlist', JSON.stringify(existing));
+      }
+      msg.textContent = "You're on the list. We'll email you when the alpha drops.";
+      msg.style.display = 'block';
+      e.target.style.display = 'none';
+    } catch (err) {
+      msg.textContent = "Something went wrong. Try again?";
+      msg.style.color = 'var(--red)';
+      msg.style.display = 'block';
+      btn.textContent = 'Join Waitlist';
+      btn.disabled = false;
+    }
+  });
 </script>
 </body>
 </html>
