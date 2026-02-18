@@ -46,3 +46,6 @@ export { searchAtoms, getTopAtoms } from './retrieval/index.js';
 // Distill
 export { distillTrace, BatchDistiller } from './distill/index.js';
 export type { ToolTrace, DistillFn } from './distill/index.js';
+
+// Seeds
+export { seedAtoms } from './seeds/index.js';

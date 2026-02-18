@@ -2,6 +2,7 @@
   "files": [],
   "references": [
     { "path": "packages/core" },
-    { "path": "packages/openclaw" }
+    { "path": "packages/openclaw" },
+    { "path": "packages/cli" }
   ]
 }

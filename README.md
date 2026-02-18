@@ -1,69 +1,69 @@
-# Osmosis
+# Osmosis 🧠
 
-**Collective intelligence for AI agents.**
+Evolutionary knowledge store for AI agents. Captures tool call patterns, failures, and insights — then injects relevant context into future tasks.
 
-Your agent learns from every agent on the network — passively. Shared operational knowledge across agent instances. What works, what fails, what's faster. Privacy-first. Open source.
+## Quick Start
 
-## What is Osmosis?
+```bash
+# Install dependencies
+npm install
 
-Osmosis is a passive knowledge-sharing network for AI agents. Agents contribute just by working — the runtime observes tool calls, errors, retries, and outcomes, then distills structured **KnowledgeAtoms** that are shared across the mesh.
+# Build all packages
+npm run build
 
-No prompts. No commands. No "remember to share." Your agent doesn't even know it's teaching.
+# Seed with example knowledge atoms
+node packages/cli/dist/cli.js seed
 
-## How It Works
+# Check what's in the store
+node packages/cli/dist/cli.js status
 
+# Search for knowledge
+node packages/cli/dist/cli.js search "browser screenshot"
+
+# Start the REST API server
+node packages/cli/dist/cli.js serve
+
+# Run all tests
+npm test
 ```
-Instrument → Score → Distill → Evolve
-```
 
-1. **Instrument** — Runtime silently captures tool calls, results, errors, retries, timing
-2. **Score** — Async outcome detection: convergence, "ship it" signals, failure patterns
-3. **Distill** — LLM extracts structured KnowledgeAtoms from scored traces
-4. **Evolve** — Fitness scoring: useful knowledge thrives, stale knowledge fades
+## Packages
 
-## Knowledge Types
-
-| Type | What it captures | Example |
-|------|-----------------|---------|
-| **SkillAtom** | "How to do X" | Verify Stripe signature before parsing body |
-| **NegativeAtom** | "Don't do X because Y" | Gemini hallucinates past 80K context |
-| **PatternAtom** | "Tried A, B, C — C won" | RLS + JWT beats schema-per-tenant |
-| **ToolAtom** | Tool reliability data | browser.screenshot 68% reliable on lazy-loaded pages |
-| **ContextAtom** | "In context X, prefer Y" | Claude > GPT-4o for structured output above 50K tokens |
-
-## Key Features
-
-- **Passive capture** — agents contribute just by working
-- **Fitness-scored knowledge** — natural selection for knowledge atoms
-- **Trust tiers** — quarantine → community → verified → core
-- **Lineage tracking** — knowledge provenance and agent genealogy
-- **Anti-homogenization** — diversity preservation, pluralistic knowledge
-- **Privacy by design** — no user data, no conversations, no code. Ever.
-
-## What's Never Shared
-
-- User conversations or chat history
-- API keys, tokens, or credentials
-- File contents or code
-- Personal information
-- Business data or proprietary processes
+| Package | Description |
+|---------|-------------|
+| `@osmosis/core` | Types, SQLite store, capture, fitness, validation, retrieval, API server |
+| `@osmosis/openclaw` | OpenClaw integration — instrument tool calls, inject context |
+| `@osmosis/cli` | CLI runner — serve, status, search, seed, reset |
 
 ## Architecture
 
-Open core model:
+```
+Agent Tool Call → instrumentToolCall() → captureToolCall() → AtomStore (SQLite)
+                                                                    ↓
+Agent Task Start ← getRelevantContext() ← searchAtoms (FTS5) ←────┘
+```
 
-- **Open (MIT):** Client library, protocol, self-hosted server, full pipeline, all atom types
-- **Paid (Cloud):** Managed mesh, analytics, private team meshes, webhooks, SLA
+**Atoms** are units of knowledge with types: `tool`, `negative`, `pattern`, `skill`, `context`.
+Each atom has a fitness score that decays over time and increases with evidence/usage.
 
-## Status
+## API
 
-🚧 **Pre-alpha.** Research validated, design complete, implementation starting.
+Default port: `7432`
 
-See the [landing page](https://turleydesigns.github.io/osmosis) for the full story.
+- `POST /atoms` — Create an atom
+- `GET /atoms` — List atoms (filter: `?type=`, `?tool_name=`)
+- `GET /atoms/search?q=` — Full-text search
+- `GET /atoms/:id` — Get single atom
 
-## Research
+## CLI
 
-Built on 15+ peer-reviewed papers including SkillRL, Agent KB, Mistake Notebook Learning, MemEvolve, Voyager, and Reflexion.
+```
+osmosis serve   [--port N] [--db PATH]  Start the REST API server
+osmosis status  [--db PATH]             Show atom count and top atoms
+osmosis search  <query> [--db PATH]     Search atoms
+osmosis seed    [--db PATH]             Seed with example atoms
+osmosis reset   [--db PATH]             Wipe all atoms
+```
 
 ## License
 
