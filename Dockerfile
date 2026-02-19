@@ -1,4 +1,6 @@
-FROM node:22-slim
+FROM node:22-slim AS build
+
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -18,6 +20,12 @@ COPY packages/openclaw/src ./packages/openclaw/src
 COPY packages/cli/src ./packages/cli/src
 
 RUN npm run build
+
+FROM node:22-slim
+
+WORKDIR /app
+
+COPY --from=build /app /app
 
 EXPOSE 7433
 
