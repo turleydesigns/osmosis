@@ -57,8 +57,8 @@ export function createMeshServer(store: AtomStore, config: MeshServerConfig): Se
     try {
       const apiKey = extractKey(req, url);
 
-      // Auth check for writes
-      if (method === 'POST' && config.writeKeys.length > 0) {
+      // Auth check for writes (except registration)
+      if (method === 'POST' && config.writeKeys.length > 0 && path !== '/mesh/register') {
         if (!apiKey || !config.writeKeys.includes(apiKey)) {
           return json(res, 401, { error: 'Invalid or missing API key. Pass via Authorization: Bearer <key>' });
         }
@@ -76,6 +76,18 @@ export function createMeshServer(store: AtomStore, config: MeshServerConfig): Se
         if (!checkRateLimit(apiKey, config.rateLimitPerHour)) {
           return json(res, 429, { error: 'Rate limit exceeded. Try again later.' });
         }
+      }
+
+      // POST /mesh/register — provision an API key for new contributors
+      if (method === 'POST' && path === '/mesh/register') {
+        const body = JSON.parse(await readBody(req));
+        const agent = body.agent ?? 'anonymous';
+        // Generate a key
+        const { randomBytes } = await import('node:crypto');
+        const newKey = 'osm_' + randomBytes(24).toString('hex');
+        // Add to writeKeys at runtime
+        config.writeKeys.push(newKey);
+        return json(res, 200, { key: newKey, agent, message: 'API key provisioned. Store it securely — it cannot be retrieved again.' });
       }
 
       // POST /mesh/contribute — accept atoms from clients

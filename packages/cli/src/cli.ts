@@ -4,11 +4,11 @@ import { AtomStore, createServer, searchAtoms, getTopAtoms, seedAtoms } from '@o
 import { createSyncServer, syncWithMesh, contributeTo, learnFrom, getAllPeers, startAutoSync, resolveSyncConfig } from '@osmosis-ai/sync';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 
 const DEFAULT_DB_PATH = join(homedir(), '.osmosis', 'atoms.db');
 const DEFAULT_PORT = 7432;
-const DEFAULT_MESH_URL = 'https://mesh.osmosis.dev';
+const DEFAULT_MESH_URL = 'https://osmosis-mesh-dev.fly.dev';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -42,8 +42,180 @@ function openStore(): AtomStore {
   return new AtomStore(dbPath);
 }
 
+function getConfigPath(): string {
+  return join(homedir(), '.osmosis', 'config.json');
+}
+
+function loadConfig(): Record<string, any> {
+  const configPath = getConfigPath();
+  if (existsSync(configPath)) {
+    try { return JSON.parse(readFileSync(configPath, 'utf-8')); } catch { return {}; }
+  }
+  return {};
+}
+
+function saveConfig(config: Record<string, any>): void {
+  const configPath = getConfigPath();
+  ensureDir(configPath);
+  writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n', 'utf-8');
+}
+
+function getMeshKey(): string {
+  const idx = args.indexOf('--key');
+  if (idx !== -1 && args[idx + 1]) return args[idx + 1]!;
+  const config = loadConfig();
+  return process.env.MESH_WRITE_KEY ?? config.meshApiKey ?? '';
+}
+
 async function main(): Promise<void> {
   switch (command) {
+    case 'init': {
+      const configPath = getConfigPath();
+      const osmosisDir = join(homedir(), '.osmosis');
+      mkdirSync(osmosisDir, { recursive: true });
+
+      const meshUrl = getMeshUrl();
+      console.log('🧠 Initializing Osmosis...\n');
+
+      // Register with mesh and get an API key
+      console.log(`   Mesh: ${meshUrl}`);
+      let apiKey = '';
+      try {
+        const res = await fetch(`${meshUrl}/mesh/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agent: 'cli-init' }) });
+        if (res.ok) {
+          const body = await res.json() as any;
+          apiKey = body.key ?? '';
+          console.log(`   API key: provisioned ✅`);
+        } else {
+          console.log(`   API key: mesh doesn't support auto-registration yet`);
+          console.log(`   → Ask the mesh admin for a key, then: osmosis config --key <YOUR_KEY>`);
+        }
+      } catch {
+        console.log(`   API key: could not reach mesh (offline mode is fine)`);
+      }
+
+      // Save config
+      const config = {
+        meshUrl,
+        meshApiKey: apiKey,
+        dbPath: join(osmosisDir, 'atoms.db'),
+        openclawDir: join(homedir(), '.openclaw'),
+        apiPort: DEFAULT_PORT,
+      };
+      saveConfig(config);
+      console.log(`   Config: ${configPath}`);
+      console.log(`   DB: ${config.dbPath}`);
+
+      // Seed
+      const store = new AtomStore(config.dbPath);
+      seedAtoms(store);
+      const count = store.getAll().length;
+      store.close();
+      console.log(`   Seeded: ${count} starter atoms`);
+
+      console.log(`\n✅ Osmosis initialized! Next steps:`);
+      console.log(`   osmosis start     — start the daemon (watches OpenClaw sessions)`);
+      console.log(`   osmosis status    — check your knowledge base`);
+      console.log(`   osmosis search    — search for tips`);
+      break;
+    }
+
+    case 'config': {
+      const config = loadConfig();
+      const keyIdx = args.indexOf('--key');
+      const meshIdx = args.indexOf('--mesh');
+      
+      if (keyIdx !== -1 && args[keyIdx + 1]) {
+        config.meshApiKey = args[keyIdx + 1];
+        saveConfig(config);
+        console.log('✅ Mesh API key saved');
+      } else if (meshIdx !== -1 && args[meshIdx + 1]) {
+        config.meshUrl = args[meshIdx + 1];
+        saveConfig(config);
+        console.log(`✅ Mesh URL set to ${config.meshUrl}`);
+      } else {
+        console.log('🧠 Osmosis Config:');
+        for (const [k, v] of Object.entries(config)) {
+          const display = k === 'meshApiKey' && v ? `${String(v).slice(0, 8)}...` : v;
+          console.log(`   ${k}: ${display}`);
+        }
+      }
+      break;
+    }
+
+    case 'start': {
+      const config = loadConfig();
+      const dbPath = config.dbPath ?? getDbPath();
+      const meshUrl = config.meshUrl ?? getMeshUrl();
+      const meshApiKey = config.meshApiKey ?? getMeshKey();
+      const openclawDir = config.openclawDir ?? join(homedir(), '.openclaw');
+      const port = config.apiPort ?? getPort();
+
+      ensureDir(dbPath);
+      const store = new AtomStore(dbPath);
+
+      // Import openclaw modules dynamically
+      let watcher: any, injector: any;
+      try {
+        const oc = await import('@osmosis-ai/openclaw');
+        watcher = new oc.TranscriptWatcher(store, {
+          openclawDir,
+          scanIntervalMs: 10_000,
+          maxAgeMs: 365 * 24 * 60 * 60 * 1000,
+        });
+        watcher.start();
+
+        injector = new oc.ContextInjector(store, {
+          workspaceDir: join(openclawDir, 'workspace'),
+          updateIntervalMs: 15 * 60 * 1000,
+          maxTips: 10,
+        });
+        injector.start();
+      } catch {
+        console.log('   @osmosis-ai/openclaw not found — running without OpenClaw integration');
+      }
+
+      // Start local API
+      const { createSyncServer, startAutoSync, resolveSyncConfig } = await import('@osmosis-ai/sync');
+      const syncConfig = resolveSyncConfig({
+        meshUrl,
+        meshApiKey,
+        autoSync: !!meshUrl,
+        syncIntervalMs: 5 * 60 * 1000,
+      });
+      const server = createSyncServer(store, port, syncConfig);
+      const autoSync = startAutoSync(store, syncConfig);
+
+      console.log('🧠 Osmosis daemon running');
+      console.log(`   API:      http://localhost:${port}`);
+      console.log(`   Mesh:     ${meshUrl}`);
+      console.log(`   Auth:     ${meshApiKey ? 'key configured' : 'no key'}`);
+      console.log(`   OpenClaw: ${openclawDir}`);
+      console.log(`   DB:       ${dbPath}`);
+      console.log(`   Press Ctrl+C to stop\n`);
+
+      // Periodic status
+      const statusTimer = setInterval(() => {
+        const all = store.getAll();
+        const watcherStats = watcher?.stats ?? { capturedCount: 0, filesWatched: 0 };
+        console.log(`📊 ${all.length} atoms | Captured: ${watcherStats.capturedCount} | Files: ${watcherStats.filesWatched}`);
+      }, 60_000);
+
+      const shutdown = () => {
+        console.log('\n🧠 Shutting down...');
+        clearInterval(statusTimer);
+        watcher?.stop();
+        injector?.stop();
+        autoSync.stop();
+        server.close();
+        store.close();
+        process.exit(0);
+      };
+      process.on('SIGINT', shutdown);
+      process.on('SIGTERM', shutdown);
+      break;
+    }
+
     case 'serve': {
       const store = openStore();
       const port = getPort();
@@ -147,8 +319,9 @@ async function main(): Promise<void> {
     case 'sync': {
       const store = openStore();
       const meshUrl = getMeshUrl();
+      const meshKey = getMeshKey();
       console.log(`🔄 Syncing with mesh at ${meshUrl}...`);
-      const result = await syncWithMesh(store, meshUrl);
+      const result = await syncWithMesh(store, meshUrl, meshKey);
       console.log(`   Pushed: ${result.pushed}`);
       console.log(`   Pulled: ${result.pulled}`);
       console.log(`   Deduped: ${result.deduped}`);
@@ -163,8 +336,9 @@ async function main(): Promise<void> {
     case 'contribute': {
       const store = openStore();
       const meshUrl = getMeshUrl();
+      const meshKey = getMeshKey();
       console.log(`📤 Contributing to mesh at ${meshUrl}...`);
-      const result = await contributeTo(store, meshUrl);
+      const result = await contributeTo(store, meshUrl, meshKey);
       console.log(`   Pushed: ${result.pushed}`);
       console.log(`   Deduped: ${result.deduped}`);
       if (result.errors.length > 0) {
@@ -178,8 +352,9 @@ async function main(): Promise<void> {
     case 'learn': {
       const store = openStore();
       const meshUrl = getMeshUrl();
+      const meshKey = getMeshKey();
       console.log(`📥 Learning from mesh at ${meshUrl}...`);
-      const result = await learnFrom(store, meshUrl);
+      const result = await learnFrom(store, meshUrl, meshKey);
       console.log(`   Pulled: ${result.pulled}`);
       console.log(`   Deduped: ${result.deduped}`);
       if (result.errors.length > 0) {
@@ -203,28 +378,30 @@ async function main(): Promise<void> {
     }
 
     default:
-      console.log(`🧠 Osmosis CLI v0.1.0
+      console.log(`🧠 Osmosis CLI v0.5.0 — Collective intelligence for AI agents
 
-Usage:
-  osmosis serve       [--port N] [--db PATH] [--mesh URL]  Start local API server
-  osmosis mesh-serve  [--port N] [--db PATH]               Start mesh server
-  osmosis sync        [--mesh URL] [--db PATH]             Sync with mesh (contribute + learn)
-  osmosis contribute  [--mesh URL] [--db PATH]             Push local atoms to mesh
-  osmosis learn       [--mesh URL] [--db PATH]             Pull atoms from mesh
+Quick Start:
+  osmosis init                                             Set up Osmosis (first time)
+  osmosis start                                            Start daemon (watches agents, syncs to mesh)
+  osmosis status                                           Check your knowledge base
+
+Commands:
+  osmosis init        [--mesh URL]                         Initialize config + seed knowledge
+  osmosis start       [--port N]                           Start daemon (watcher + sync + API)
+  osmosis config      [--key KEY] [--mesh URL]             View/update config
   osmosis status      [--db PATH]                          Show atom count and top atoms
   osmosis search      <query> [--db PATH]                  Search atoms
-  osmosis seed        [--db PATH]                          Seed with example atoms
+  osmosis sync        [--mesh URL] [--key KEY]             Sync with mesh (push + pull)
+  osmosis contribute  [--mesh URL] [--key KEY]             Push local atoms to mesh
+  osmosis learn       [--mesh URL] [--key KEY]             Pull atoms from mesh
+  osmosis seed        [--db PATH]                          Seed with starter knowledge
+  osmosis serve       [--port N] [--db PATH] [--mesh URL]  Start local API only
   osmosis reset       [--db PATH]                          Wipe all atoms
 
-Options:
-  --db PATH       Database path (default: ~/.osmosis/atoms.db)
-  --port N        API port (default: 7432)
-  --mesh URL      Mesh server URL (default: https://mesh.osmosis.dev)
+Config: ~/.osmosis/config.json
+Database: ~/.osmosis/atoms.db
 
-Environment:
-  OSMOSIS_DB_PATH    Database path override
-  OSMOSIS_PORT       API port override
-  OSMOSIS_MESH_URL   Mesh server URL override`);
+https://github.com/turleydesigns/osmosis`);
       if (command) process.exit(1);
   }
 }

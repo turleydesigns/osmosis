@@ -2,9 +2,14 @@
   "name": "osmosis",
   "version": "0.1.0",
   "private": true,
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "build": "tsc --build",
     "test": "npm test --workspaces"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.0.18"
   }
 }
