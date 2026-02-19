@@ -12,6 +12,7 @@ COPY packages/openclaw/package.json packages/openclaw/tsconfig.json ./packages/o
 COPY packages/cli/package.json packages/cli/tsconfig.json ./packages/cli/
 
 RUN npm ci
+RUN cd node_modules/better-sqlite3 && npx --yes prebuild-install || npm run build-release
 
 COPY packages/core/src ./packages/core/src
 COPY packages/mesh-server/src ./packages/mesh-server/src
