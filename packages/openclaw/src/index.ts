@@ -6,3 +6,4 @@ export type { OsmosisConfig } from './config.js';
 export { initOsmosis } from './init.js';
 export type { OsmosisHandle } from './init.js';
 export { TranscriptWatcher } from './watcher.js';
+export { ContextInjector } from './context-injector.js';

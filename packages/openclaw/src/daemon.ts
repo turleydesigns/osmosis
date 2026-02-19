@@ -8,9 +8,13 @@
  * 3. Auto-sync local atoms to the mesh server
  */
 
+import { join } from 'node:path';
 import { initOsmosis } from './init.js';
 import { TranscriptWatcher } from './watcher.js';
 import { resolveConfig } from './config.js';
+import { ContextInjector } from './context-injector.js';
+import { BatchDistiller } from '@osmosis-ai/core';
+import { llmDistill, toCreateAtoms, type LLMDistillConfig, DEFAULT_LLM_CONFIG } from '@osmosis-ai/core/dist/distill/llm.js';
 
 const MESH_URL = process.env.OSMOSIS_MESH_URL ?? 'https://osmosis-mesh-dev.fly.dev';
 const DB_PATH = process.env.OSMOSIS_DB_PATH ?? `${process.env.HOME ?? '/root'}/.osmosis/atoms.db`;
@@ -45,6 +49,77 @@ const watcher = new TranscriptWatcher(handle.store, {
 
 watcher.start();
 
+// Start context injector (writes OSMOSIS_TIPS.md to agent workspaces)
+const injector = new ContextInjector(handle.store, {
+  workspaceDir: join(OPENCLAW_DIR, 'workspace'),
+  updateIntervalMs: 15 * 60 * 1000, // 15 min
+  maxTips: 10,
+});
+injector.start();
+
+// Set up LLM distillation (runs periodically on captured traces)
+const LLM_API_KEY = process.env.OPENAI_API_KEY ?? process.env.OPENROUTER_API_KEY ?? '';
+const LLM_API_URL = process.env.OPENROUTER_API_KEY 
+  ? 'https://openrouter.ai/api/v1/chat/completions'
+  : 'https://api.openai.com/v1/chat/completions';
+const LLM_MODEL = process.env.OSMOSIS_DISTILL_MODEL ?? (process.env.OPENROUTER_API_KEY ? 'google/gemini-2.5-flash' : 'gpt-4o-mini');
+
+if (LLM_API_KEY) {
+  console.log(`🧪 LLM distillation enabled (model: ${LLM_MODEL})`);
+  
+  const distillConfig: LLMDistillConfig = {
+    ...DEFAULT_LLM_CONFIG,
+    apiUrl: LLM_API_URL,
+    apiKey: LLM_API_KEY,
+    model: LLM_MODEL,
+    minTraces: 10,
+  };
+
+  // Run distillation every 30 min
+  setInterval(async () => {
+    try {
+      const allAtoms = handle.store.getAll();
+      // Get raw tool atoms that haven't been distilled (source_agent_hash = 'local')
+      const rawAtoms = allAtoms.filter(a => 
+        a.type === 'tool' && a.source_agent_hash === 'local'
+      );
+      
+      if (rawAtoms.length < distillConfig.minTraces) return;
+      
+      // Convert to traces for the distiller
+      const traces = rawAtoms.map(a => ({
+        toolName: (a as any).tool_name ?? 'unknown',
+        params: JSON.parse(a.context || '{}'),
+        result: (a as any).outcome === 'success' ? 'ok' : null,
+        error: (a as any).error_signature ?? null,
+        latencyMs: (a as any).latency_ms ?? 0,
+        outcome: ((a as any).outcome ?? 'success') as 'success' | 'failure' | 'partial',
+        agentId: a.source_agent_hash,
+        timestamp: a.created_at,
+      }));
+
+      console.log(`🧪 Distilling ${traces.length} traces...`);
+      const distilled = await llmDistill(traces, distillConfig);
+      
+      if (distilled.length > 0) {
+        const createAtoms = toCreateAtoms(distilled);
+        for (const atom of createAtoms) {
+          if (atom.type === 'tool') {
+            handle.store.createToolAtom(atom as any);
+          } else if (atom.type === 'negative') {
+            handle.store.createNegativeAtom(atom as any);
+          }
+        }
+        console.log(`🧪 Distilled ${distilled.length} new knowledge atoms`);
+      }
+    } catch (err) {
+      console.error(`🧪 Distillation error: ${err}`);
+    }
+  }, 30 * 60 * 1000);
+} else {
+  console.log('🧪 LLM distillation disabled (no OPENAI_API_KEY or OPENROUTER_API_KEY)');
+}
+
 // Status endpoint on the local API
 const statsInterval = setInterval(() => {
   const stats = watcher.stats;
@@ -58,6 +133,7 @@ const statsInterval = setInterval(() => {
 function shutdown() {
   console.log('\n🧠 Osmosis daemon shutting down...');
   clearInterval(statsInterval);
+  injector.stop();
   watcher.stop();
   handle.stop();
   process.exit(0);
