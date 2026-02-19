@@ -119,7 +119,6 @@ export async function llmDistill(
         ],
         max_tokens: config.maxTokens,
         temperature: 0.3,
-        response_format: { type: 'json_object' },
       }),
     });
 
@@ -132,8 +131,27 @@ export async function llmDistill(
     const content = body.choices?.[0]?.message?.content;
     if (!content) return [];
 
-    const parsed = JSON.parse(content);
-    const atoms = Array.isArray(parsed) ? parsed : parsed.atoms ?? [];
+    // Try strict JSON first, then extract JSON from markdown fences
+    let parsed: any;
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      // Try extracting JSON from ```json ... ``` blocks
+      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (jsonMatch) {
+        parsed = JSON.parse(jsonMatch[1].trim());
+      } else {
+        // Try finding array in the content
+        const arrayMatch = content.match(/\[[\s\S]*\]/);
+        if (arrayMatch) {
+          parsed = JSON.parse(arrayMatch[0]);
+        } else {
+          console.error('LLM distill: could not parse response as JSON');
+          return [];
+        }
+      }
+    }
+    const atoms = Array.isArray(parsed) ? parsed : parsed.atoms ?? parsed.knowledge ?? [];
     
     return atoms.filter((a: any) => 
       a.observation && typeof a.observation === 'string' && a.observation.length > 10

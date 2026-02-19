@@ -29,6 +29,7 @@ console.log(`   DB:       ${DB_PATH}`);
 console.log(`   API:      http://localhost:${API_PORT}`);
 console.log(`   OpenClaw: ${OPENCLAW_DIR}`);
 console.log(`   Sync:     every ${SYNC_INTERVAL / 1000}s`);
+console.log(`   Auth:     ${MESH_WRITE_KEY ? 'key configured' : 'NO KEY (sync will fail on authed mesh)'}`);
 
 // Initialize Osmosis (local store + sync server + auto-sync)
 const handle = initOsmosis(resolveConfig({
@@ -43,10 +44,11 @@ const handle = initOsmosis(resolveConfig({
 }));
 
 // Start transcript watcher
+const MAX_AGE = parseInt(process.env.OSMOSIS_MAX_AGE_DAYS ?? '365', 10);
 const watcher = new TranscriptWatcher(handle.store, {
   openclawDir: OPENCLAW_DIR,
   scanIntervalMs: 10_000,
-  maxAgeMs: 24 * 60 * 60 * 1000,
+  maxAgeMs: MAX_AGE * 24 * 60 * 60 * 1000,
 });
 
 watcher.start();
