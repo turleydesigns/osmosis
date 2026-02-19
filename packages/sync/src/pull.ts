@@ -5,7 +5,7 @@ import { getLastPullAt, setLastPullAt } from './meta.js';
 /**
  * Learn from the mesh server — pull new/updated atoms.
  */
-export async function learnFrom(localStore: AtomStore, meshUrl: string): Promise<SyncResult> {
+export async function learnFrom(localStore: AtomStore, meshUrl: string, apiKey?: string): Promise<SyncResult> {
   const errors: string[] = [];
   const since = getLastPullAt(localStore, meshUrl);
   const now = new Date().toISOString();
@@ -15,7 +15,9 @@ export async function learnFrom(localStore: AtomStore, meshUrl: string): Promise
     const url = since
       ? `${meshUrl}/mesh/atoms?since=${encodeURIComponent(since)}`
       : `${meshUrl}/mesh/atoms`;
-    const res = await fetch(url);
+    const headers: Record<string, string> = {};
+    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+    const res = await fetch(url, { headers });
     if (!res.ok) {
       const errBody = await res.text();
       return { pushed: 0, pulled: 0, deduped: 0, errors: [`Learn failed: ${res.status} ${errBody}`], timestamp: now };

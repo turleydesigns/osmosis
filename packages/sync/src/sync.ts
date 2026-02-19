@@ -8,7 +8,7 @@ import { learnFrom } from './pull.js';
  */
 export async function syncWithMesh(localStore: AtomStore, meshUrl: string, apiKey?: string): Promise<SyncResult> {
   const pushResult = await contributeTo(localStore, meshUrl, apiKey);
-  const pullResult = await learnFrom(localStore, meshUrl);
+  const pullResult = await learnFrom(localStore, meshUrl, apiKey);
 
   return {
     pushed: pushResult.pushed + pushResult.deduped,

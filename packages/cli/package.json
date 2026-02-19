@@ -1,6 +1,6 @@
 {
   "name": "@osmosis-ai/cli",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "CLI runner for Osmosis knowledge store",
   "type": "module",
   "main": "dist/cli.js",

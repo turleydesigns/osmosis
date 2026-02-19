@@ -127,7 +127,14 @@ export class AtomStore {
   /** Insert a ToolAtom (with validation and dedup) */
   createToolAtom(data: CreateToolAtom): ToolAtom {
     validateCreateToolAtom(data);
-    const similar = this.findSimilar(data.observation, 0.9);
+    
+    // Smarter dedup for tool atoms: match on tool_name + outcome + observation similarity
+    // Only dedup if same tool, same outcome, AND very similar observation
+    const candidates = data.tool_name 
+      ? this.queryByToolName(data.tool_name).filter(a => (a as any).outcome === data.outcome)
+      : [];
+    const similar = candidates.filter(a => jaccardSimilarity(a.observation, data.observation) >= 0.85);
+    
     if (similar.length > 0) {
       const best = similar[0]!;
       this._mergeAtom(best.id, data.fitness_score, data.confidence);

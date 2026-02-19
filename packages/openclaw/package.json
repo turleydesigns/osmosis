@@ -1,6 +1,6 @@
 {
   "name": "@osmosis-ai/openclaw",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "OpenClaw integration hook for Osmosis — instrument tool calls and inject knowledge context",
   "type": "module",
   "main": "dist/index.js",
