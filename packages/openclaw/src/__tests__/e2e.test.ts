@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { AtomStore, createServer, seedAtoms } from '@osmosis/core';
+import { AtomStore, createServer, seedAtoms } from '@osmosis-ai/core';
 import { instrumentToolCall, getRelevantContext } from '../index.js';
 import type { Server } from 'node:http';
 

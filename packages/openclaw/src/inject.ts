@@ -1,4 +1,4 @@
-import { type AtomStore, type KnowledgeAtom, searchAtoms, getTopAtoms } from '@osmosis/core';
+import { type AtomStore, type KnowledgeAtom, searchAtoms, getTopAtoms } from '@osmosis-ai/core';
 
 /**
  * Query the local store for relevant knowledge atoms and format them

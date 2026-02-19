@@ -1,5 +1,5 @@
 {
-  "name": "@osmosis/cli",
+  "name": "@osmosis-ai/cli",
   "version": "0.1.0",
   "description": "CLI runner for Osmosis knowledge store",
   "type": "module",
@@ -14,9 +14,9 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@osmosis/core": "*",
-    "@osmosis/sync": "*",
-    "@osmosis/mesh-server": "*"
+    "@osmosis-ai/core": "*",
+    "@osmosis-ai/sync": "*",
+    "@osmosis-ai/mesh-server": "*"
   },
   "devDependencies": {
     "better-sqlite3": "^11.7.0",

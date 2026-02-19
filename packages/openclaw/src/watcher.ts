@@ -9,7 +9,7 @@
 import { watch, readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, basename } from 'node:path';
 import { createHash } from 'node:crypto';
-import { captureToolCall, AtomStore } from '@osmosis/core';
+import { captureToolCall, AtomStore } from '@osmosis-ai/core';
 
 interface WatcherConfig {
   /** OpenClaw state directory (default: ~/.openclaw) */

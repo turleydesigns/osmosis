@@ -1,6 +1,6 @@
-import { AtomStore } from '@osmosis/core';
-import { createSyncServer, startAutoSync, resolveSyncConfig } from '@osmosis/sync';
-import type { AutoSyncHandle } from '@osmosis/sync';
+import { AtomStore } from '@osmosis-ai/core';
+import { createSyncServer, startAutoSync, resolveSyncConfig } from '@osmosis-ai/sync';
+import type { AutoSyncHandle } from '@osmosis-ai/sync';
 import type { Server } from 'node:http';
 import type { OsmosisConfig } from './config.js';
 import { mkdirSync } from 'node:fs';

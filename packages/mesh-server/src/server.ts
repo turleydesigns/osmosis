@@ -1,6 +1,6 @@
 import { createServer as createHttpServer, type IncomingMessage, type ServerResponse, type Server } from 'node:http';
-import { AtomStore } from '@osmosis/core';
-import type { KnowledgeAtom } from '@osmosis/core';
+import { AtomStore } from '@osmosis-ai/core';
+import type { KnowledgeAtom } from '@osmosis-ai/core';
 import type { MeshServerConfig } from './config.js';
 
 function json(res: ServerResponse, status: number, data: unknown): void {

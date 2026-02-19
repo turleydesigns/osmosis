@@ -1,5 +1,5 @@
 {
-  "name": "@osmosis/sync",
+  "name": "@osmosis-ai/sync",
   "version": "0.1.0",
   "description": "Sync engine for Osmosis — HTTP-based instance-to-instance sync",
   "type": "module",
@@ -11,8 +11,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@osmosis/core": "*",
-    "@osmosis/mesh-server": "*"
+    "@osmosis-ai/core": "*",
+    "@osmosis-ai/mesh-server": "*"
   },
   "devDependencies": {
     "better-sqlite3": "^11.7.0",

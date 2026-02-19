@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { AtomStore } from '@osmosis/core';
+import { AtomStore } from '@osmosis-ai/core';
 import { instrumentToolCall } from '../instrument.js';
 
 describe('instrumentToolCall', () => {

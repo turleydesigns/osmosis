@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { AtomStore, createServer, searchAtoms, getTopAtoms, seedAtoms } from '@osmosis/core';
-import { createSyncServer, syncWithMesh, contributeTo, learnFrom, getAllPeers, startAutoSync, resolveSyncConfig } from '@osmosis/sync';
+import { AtomStore, createServer, searchAtoms, getTopAtoms, seedAtoms } from '@osmosis-ai/core';
+import { createSyncServer, syncWithMesh, contributeTo, learnFrom, getAllPeers, startAutoSync, resolveSyncConfig } from '@osmosis-ai/sync';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { mkdirSync } from 'node:fs';
@@ -73,7 +73,7 @@ async function main(): Promise<void> {
 
     case 'mesh-serve': {
       // Dynamically import mesh-server to avoid hard dependency
-      const { startMeshServer } = await import('@osmosis/mesh-server');
+      const { startMeshServer } = await import('@osmosis-ai/mesh-server');
       const port = getPort();
       const dbPath = getDbPath();
       const handle = startMeshServer({ port, dbPath });

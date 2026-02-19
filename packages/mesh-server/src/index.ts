@@ -1,4 +1,4 @@
-import { AtomStore } from '@osmosis/core';
+import { AtomStore } from '@osmosis-ai/core';
 import { createMeshServer } from './server.js';
 import { resolveMeshConfig, type MeshServerConfig } from './config.js';
 import type { Server } from 'node:http';

@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { AtomStore } from '@osmosis/core';
+import { AtomStore } from '@osmosis-ai/core';
 import { startMeshServer, type MeshServerHandle } from '../index.js';
 
 const PORT = 19600;

@@ -1,4 +1,4 @@
-import type { AtomStore } from '@osmosis/core';
+import type { AtomStore } from '@osmosis-ai/core';
 import type { SyncConfig } from './config.js';
 import { syncWithMesh } from './sync.js';
 

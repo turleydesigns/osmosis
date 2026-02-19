@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { AtomStore } from '@osmosis/core';
-import { startMeshServer, type MeshServerHandle } from '@osmosis/mesh-server';
+import { AtomStore } from '@osmosis-ai/core';
+import { startMeshServer, type MeshServerHandle } from '@osmosis-ai/mesh-server';
 import { createSyncServer } from '../server.js';
 import { syncWithMesh } from '../sync.js';
 import { contributeTo } from '../push.js';

@@ -1,4 +1,4 @@
-import { captureToolCall, type AtomStore } from '@osmosis/core';
+import { captureToolCall, type AtomStore } from '@osmosis-ai/core';
 
 export interface ToolCallFn {
   (toolName: string, params: Record<string, unknown>): Promise<unknown>;

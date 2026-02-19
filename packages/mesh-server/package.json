@@ -1,5 +1,5 @@
 {
-  "name": "@osmosis/mesh-server",
+  "name": "@osmosis-ai/mesh-server",
   "version": "0.1.0",
   "description": "Centralized mesh server for Osmosis knowledge sharing",
   "type": "module",
@@ -11,7 +11,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@osmosis/core": "*"
+    "@osmosis-ai/core": "*"
   },
   "devDependencies": {
     "better-sqlite3": "^11.7.0",

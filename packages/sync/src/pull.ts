@@ -1,4 +1,4 @@
-import type { AtomStore, KnowledgeAtom } from '@osmosis/core';
+import type { AtomStore, KnowledgeAtom } from '@osmosis-ai/core';
 import type { SyncResult } from './types.js';
 import { getLastPullAt, setLastPullAt } from './meta.js';
 

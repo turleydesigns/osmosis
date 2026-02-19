@@ -1,4 +1,4 @@
-import type { AtomStore } from '@osmosis/core';
+import type { AtomStore } from '@osmosis-ai/core';
 import type { SyncResult } from './types.js';
 import { contributeTo } from './push.js';
 import { learnFrom } from './pull.js';

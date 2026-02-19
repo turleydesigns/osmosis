@@ -1,5 +1,5 @@
 import { createServer as createHttpServer, type Server } from 'node:http';
-import { AtomStore } from '@osmosis/core';
+import { AtomStore } from '@osmosis-ai/core';
 import type { SyncConfig } from './config.js';
 
 /**

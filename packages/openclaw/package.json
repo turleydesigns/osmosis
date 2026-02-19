@@ -1,5 +1,5 @@
 {
-  "name": "@osmosis/openclaw",
+  "name": "@osmosis-ai/openclaw",
   "version": "0.1.0",
   "description": "OpenClaw integration hook for Osmosis — instrument tool calls and inject knowledge context",
   "type": "module",
@@ -14,8 +14,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@osmosis/core": "*",
-    "@osmosis/sync": "*"
+    "@osmosis-ai/core": "*",
+    "@osmosis-ai/sync": "*"
   },
   "devDependencies": {
     "better-sqlite3": "^11.7.0",

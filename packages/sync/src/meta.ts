@@ -1,4 +1,4 @@
-import type { AtomStore } from '@osmosis/core';
+import type { AtomStore } from '@osmosis-ai/core';
 
 const SYNC_META_SCHEMA = `
 CREATE TABLE IF NOT EXISTS sync_meta (
