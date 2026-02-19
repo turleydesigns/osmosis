@@ -9,7 +9,7 @@ COPY packages/sync/package.json packages/sync/tsconfig.json ./packages/sync/
 COPY packages/openclaw/package.json packages/openclaw/tsconfig.json ./packages/openclaw/
 COPY packages/cli/package.json packages/cli/tsconfig.json ./packages/cli/
 
-RUN npm ci --ignore-scripts
+RUN npm ci
 
 COPY packages/core/src ./packages/core/src
 COPY packages/mesh-server/src ./packages/mesh-server/src
