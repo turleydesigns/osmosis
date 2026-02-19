@@ -21,6 +21,7 @@ const DB_PATH = process.env.OSMOSIS_DB_PATH ?? `${process.env.HOME ?? '/root'}/.
 const API_PORT = parseInt(process.env.OSMOSIS_API_PORT ?? '7432', 10);
 const OPENCLAW_DIR = process.env.OPENCLAW_DIR ?? `${process.env.HOME ?? '/root'}/.openclaw`;
 const SYNC_INTERVAL = parseInt(process.env.OSMOSIS_SYNC_INTERVAL ?? '300000', 10); // 5 min
+const MESH_WRITE_KEY = process.env.MESH_WRITE_KEY ?? '';
 
 console.log('🧠 Osmosis daemon starting...');
 console.log(`   Mesh:     ${MESH_URL}`);
@@ -36,6 +37,7 @@ const handle = initOsmosis(resolveConfig({
   apiPort: API_PORT,
   meshUrl: MESH_URL,
   syncInterval: SYNC_INTERVAL,
+  meshApiKey: MESH_WRITE_KEY,
   captureToolCalls: true,
   injectContext: true,
 }));

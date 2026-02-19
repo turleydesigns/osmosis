@@ -16,6 +16,8 @@ export interface OsmosisConfig {
   meshUrl: string;
   /** Sync interval in ms (default: 5 min) */
   syncInterval: number;
+  /** Mesh API key for authenticated sync */
+  meshApiKey: string;
 }
 
 export const DEFAULT_CONFIG: OsmosisConfig = {
@@ -26,6 +28,7 @@ export const DEFAULT_CONFIG: OsmosisConfig = {
   injectContext: true,
   meshUrl: 'https://mesh.osmosis.dev',
   syncInterval: 5 * 60 * 1000,
+  meshApiKey: '',
 };
 
 export function resolveConfig(partial?: Partial<OsmosisConfig>): OsmosisConfig {

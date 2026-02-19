@@ -23,6 +23,7 @@ export function initOsmosis(config: OsmosisConfig): OsmosisHandle {
     meshUrl: config.meshUrl,
     autoSync: !!config.meshUrl,
     syncIntervalMs: config.syncInterval,
+    meshApiKey: config.meshApiKey,
   });
 
   const server = createSyncServer(store, config.apiPort, syncConfig);

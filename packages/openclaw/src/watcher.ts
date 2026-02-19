@@ -270,12 +270,22 @@ export class TranscriptWatcher {
       const pending = this.pendingCalls.get(callId);
       
       if (pending) {
+        // Extract richer context from the result
+        const resultStr = typeof call.result === 'string' ? call.result : '';
+        const errorStr = call.error ?? null;
+        
+        // Build a more descriptive observation
+        const observation = this.buildObservation(pending.toolName, pending.params, resultStr, errorStr);
+        
+        // Extract param patterns worth capturing
+        const paramContext = this.extractParamContext(pending.toolName, pending.params);
+        
         captureToolCall(
           this.store,
           pending.toolName,
-          pending.params,
+          { ...pending.params, _osmosis_context: paramContext },
           call.result,
-          call.error ?? null,
+          errorStr,
           pending.timestamp && call.timestamp 
             ? Math.round(call.timestamp - pending.timestamp)
             : null,
@@ -292,6 +302,75 @@ export class TranscriptWatcher {
         this.pendingCalls.delete(key);
       }
     }
+  }
+
+  /** Build a descriptive observation from tool call details */
+  private buildObservation(toolName: string, params: Record<string, unknown>, result: string, error: string | null): string {
+    if (error) {
+      // Extract the most useful part of the error
+      const errorSnippet = error.slice(0, 150).replace(/\n/g, ' ').trim();
+      
+      // Specific patterns
+      if (error.includes('ENOENT')) return `Tool "${toolName}" failed: file/command not found (ENOENT)`;
+      if (error.includes('ECONNREFUSED')) return `Tool "${toolName}" failed: connection refused`;
+      if (error.includes('timeout') || error.includes('Timeout')) return `Tool "${toolName}" timed out`;
+      if (error.includes('EPERM') || error.includes('permission')) return `Tool "${toolName}" failed: permission denied`;
+      if (error.includes('rate limit') || error.includes('429')) return `Tool "${toolName}" hit rate limit`;
+      if (error.includes('401') || error.includes('403')) return `Tool "${toolName}" failed: auth error (${error.includes('401') ? '401' : '403'})`;
+      
+      return `Tool "${toolName}" failed: ${errorSnippet}`;
+    }
+
+    // For success, note interesting patterns
+    if (toolName === 'exec') {
+      const cmd = String(params.command ?? '').slice(0, 80);
+      if (cmd) return `exec succeeded: \`${cmd}\``;
+    }
+    if (toolName === 'web_fetch') {
+      const url = String(params.url ?? '').replace(/\?.*/, '').slice(0, 60);
+      if (url) return `web_fetch succeeded for ${url}`;
+    }
+    if (toolName === 'web_search') {
+      const q = String(params.query ?? '').slice(0, 60);
+      if (q) return `web_search succeeded: "${q}"`;
+    }
+    if (toolName === 'browser') {
+      const action = String(params.action ?? '');
+      if (action) return `browser.${action} succeeded`;
+    }
+    if (toolName === 'Read' || toolName === 'read') {
+      const path = String(params.file_path ?? params.path ?? '');
+      const ext = path.split('.').pop();
+      if (ext) return `Read succeeded for .${ext} file`;
+    }
+
+    return `Tool "${toolName}" succeeded`;
+  }
+
+  /** Extract useful param patterns for context */
+  private extractParamContext(toolName: string, params: Record<string, unknown>): Record<string, unknown> {
+    const ctx: Record<string, unknown> = {};
+    
+    if (toolName === 'exec') {
+      const cmd = String(params.command ?? '');
+      // Capture the base command (first word)
+      const baseCmd = cmd.split(/\s+/)[0]?.replace(/^[.\/]+/, '') ?? '';
+      ctx.base_command = baseCmd;
+      ctx.has_timeout = 'timeout' in params;
+      ctx.has_background = 'background' in params;
+      ctx.has_pty = 'pty' in params;
+    }
+    if (toolName === 'web_fetch') {
+      const url = String(params.url ?? '');
+      try { ctx.domain = new URL(url).hostname; } catch {}
+      ctx.has_maxChars = 'maxChars' in params;
+    }
+    if (toolName === 'browser') {
+      ctx.action = params.action;
+      ctx.has_ref = 'ref' in params;
+    }
+    
+    return ctx;
   }
 
   /** Extract agent ID from file path */

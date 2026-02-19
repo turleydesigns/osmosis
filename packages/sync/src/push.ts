@@ -5,7 +5,7 @@ import { getLastPushAt, setLastPushAt } from './meta.js';
 /**
  * Contribute local atoms to the mesh server.
  */
-export async function contributeTo(localStore: AtomStore, meshUrl: string): Promise<SyncResult> {
+export async function contributeTo(localStore: AtomStore, meshUrl: string, apiKey?: string): Promise<SyncResult> {
   const errors: string[] = [];
   const since = getLastPushAt(localStore, meshUrl);
   const now = new Date().toISOString();
@@ -25,9 +25,12 @@ export async function contributeTo(localStore: AtomStore, meshUrl: string): Prom
 
   try {
     const payload = toSync.map(stripAutoFields);
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+    
     const res = await fetch(`${meshUrl}/mesh/contribute`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(payload),
     });
 

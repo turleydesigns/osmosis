@@ -8,6 +8,28 @@ function json(res: ServerResponse, status: number, data: unknown): void {
   res.end(JSON.stringify(data));
 }
 
+/** Extract API key from Authorization header or query param */
+function extractKey(req: IncomingMessage, url: URL): string | null {
+  const authHeader = req.headers['authorization'];
+  if (authHeader?.startsWith('Bearer ')) return authHeader.slice(7);
+  return url.searchParams.get('key');
+}
+
+/** Simple in-memory rate limiter */
+const rateBuckets = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(key: string, limit: number): boolean {
+  const now = Date.now();
+  const bucket = rateBuckets.get(key);
+  if (!bucket || now > bucket.resetAt) {
+    rateBuckets.set(key, { count: 1, resetAt: now + 3600_000 });
+    return true;
+  }
+  if (bucket.count >= limit) return false;
+  bucket.count++;
+  return true;
+}
+
 function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
@@ -33,6 +55,29 @@ export function createMeshServer(store: AtomStore, config: MeshServerConfig): Se
     const method = req.method ?? 'GET';
 
     try {
+      const apiKey = extractKey(req, url);
+
+      // Auth check for writes
+      if (method === 'POST' && config.writeKeys.length > 0) {
+        if (!apiKey || !config.writeKeys.includes(apiKey)) {
+          return json(res, 401, { error: 'Invalid or missing API key. Pass via Authorization: Bearer <key>' });
+        }
+      }
+
+      // Auth check for reads (if readKeys configured)
+      if (method === 'GET' && config.readKeys.length > 0 && path !== '/mesh/stats') {
+        if (!apiKey || !config.readKeys.includes(apiKey)) {
+          return json(res, 401, { error: 'Invalid or missing API key' });
+        }
+      }
+
+      // Rate limiting for writes
+      if (method === 'POST' && apiKey) {
+        if (!checkRateLimit(apiKey, config.rateLimitPerHour)) {
+          return json(res, 429, { error: 'Rate limit exceeded. Try again later.' });
+        }
+      }
+
       // POST /mesh/contribute — accept atoms from clients
       if (method === 'POST' && path === '/mesh/contribute') {
         const body = JSON.parse(await readBody(req));

@@ -6,8 +6,8 @@ import { learnFrom } from './pull.js';
 /**
  * Full sync with mesh: contribute local atoms, then learn from mesh.
  */
-export async function syncWithMesh(localStore: AtomStore, meshUrl: string): Promise<SyncResult> {
-  const pushResult = await contributeTo(localStore, meshUrl);
+export async function syncWithMesh(localStore: AtomStore, meshUrl: string, apiKey?: string): Promise<SyncResult> {
+  const pushResult = await contributeTo(localStore, meshUrl, apiKey);
   const pullResult = await learnFrom(localStore, meshUrl);
 
   return {

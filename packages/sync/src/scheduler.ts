@@ -13,7 +13,7 @@ export function startAutoSync(store: AtomStore, config: SyncConfig): AutoSyncHan
 
   const timer = setInterval(async () => {
     try {
-      await syncWithMesh(store, config.meshUrl);
+      await syncWithMesh(store, config.meshUrl, config.meshApiKey);
     } catch {
       // Silent failure — sync will retry next interval
     }

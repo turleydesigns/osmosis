@@ -5,6 +5,8 @@ export interface SyncConfig {
   syncIntervalMs: number;
   /** Enable periodic sync */
   autoSync: boolean;
+  /** API key for mesh authentication */
+  meshApiKey?: string;
 }
 
 export const DEFAULT_SYNC_CONFIG: SyncConfig = {
